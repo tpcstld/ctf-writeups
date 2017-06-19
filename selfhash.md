@@ -69,6 +69,8 @@ Type "help", "copyright", "credits" or "license" for more information.
 >>> from pwnlib.util.crc import crc_82_darc
 >>> crc_82_darc('0000000000000000000000000000000000000000000000000000000000000000000000000000000000')
 1021102219365466010738322L
+>>> crc_82_darc('0' * 82) # This is the same.
+1021102219365466010738322L
 ```
 
 Now we're sure.
@@ -87,3 +89,40 @@ Reading the Wikipedia article on CRC, we learn the following:
 ```
 
 2. CRC is linear, which means that `crc(xor(x, y)) = xor(crc(x), crc(y))`.
+
+(2) seems like a very interesting property! Let's try it out:
+
+```
+>>> crc_82_darc('0' * 81 + '1')
+1530552403008155235290126L
+>>> crc_82_darc('0' * 81 + '1') ^ crc_82_darc('0' * 82)
+1946231125162404815852188L
+```
+
+We use the fact that `xor('0', '1') = 0b00000001`, since their ASCII representations differ only in the last bit.
+
+```
+>>> chr(ord('0') ^ ord('0'))
+'\x00'
+>>> chr(ord('0') ^ ord('1'))
+'\x01'
+>>> crc_82_darc('\x00' * 81 + '\x01')
+1946231125162404815852188L
+```
+
+Cool, the property seems to hold.
+
+Observe that any binary number can be written as the `xor` of its bits. For example, `1010` can be written as `xor(1000, 0010)`. We can also `xor` it with `0000` as well. `1010 = xor(1000, 0010, 0000)`.
+
+ASCII strings of zeros and ones also have a similar property. For example, the string
+`"1010" == xor("0000", "\x01\x00\x00\x00", "\x00\x00\x01\x00")`.
+
+Here's the relationship between the binary and ASCII representations of a number.
+
+`data`  |ASCII representation                       |`int(data, 2)`  
+--------|-------------------------------------------|--------------
+`"0000"`|0b0011000<span style="color:red">0</span> 0b0011000<span style="color:red">0</span> 0b0011000<span style="color:red">0</span> 0b0011000<span style="color:red">0</span>| 0b<span style="color:red">0</span><span style="color:red">0</span><span style="color:red">0</span><span style="color:red">0</span>
+`"1010"`|0b00110001 0b00110000 0b00110001 0b00110000| 0b1010
+`"0001"`|0b00110000 0b00110000 0b00110000 0b00110001| 0b0000
+
+
