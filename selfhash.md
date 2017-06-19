@@ -125,4 +125,26 @@ Here's the relationship between the binary and ASCII representations of a number
 `"1010"`|0b00110001 0b00110000 0b00110001 0b00110000| 0b1010
 `"0001"`|0b00110000 0b00110000 0b00110000 0b00110001| 0b0000
 
+<!-- Matrix Construction -->
 
+Now, given a CRC, we can use its linearity property to break it up into a combination of XORs just like how we can break up
+ASCII strings. For example,
+`crc_82_darc("1010") == xor(crc_82_darc("0000"), crc_82_darc("\x01\x00\x00\x00"), crc_82_darc("\x00\x00\x01\x00")`.
+Similarly, recall that `0b1010 == xor(0b0000, 0b1000, 0b0010)`.
+
+To solve this problem, we need the CRC of the ASCII representation to be the CRC. We will model this as a system of equations and solve for the CRC.
+
+To do this, we need to mathematically represent:
+
+* a binary number
+* the XOR of binary numbers
+* the `crc_82_darc` of a binary number
+* the equality of two binary numbers
+
+
+
+
+
+we need to find a set `(0000, 1000, 0010)` such that `xor(crc_82_darc("0000"), ...) = xor(0b0000, ...)`
+
+we need both sets of XORs to represent the same number. This will get us a string So, we can consider this problem as a system of equations
