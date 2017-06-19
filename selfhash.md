@@ -57,5 +57,33 @@ Interesting!
 
 Some Googling reveals that the `crc_82_darc` function most likely corresponds
 to the corresponding function in [pwntools](http://docs.pwntools.com/en/stable/util/crc.html).
-To get past this assert, we need to make the output of the checksum collide with
-the binary representation of our data.
+Let's verify that:
+
+```
+$ pip install pwntools
+...
+$ python
+Python 2.7.10 (default, Feb  6 2017, 23:53:20)
+[GCC 4.2.1 Compatible Apple LLVM 8.0.0 (clang-800.0.34)] on darwin
+Type "help", "copyright", "credits" or "license" for more information.
+>>> from pwnlib.util.crc import crc_82_darc
+>>> crc_82_darc('0000000000000000000000000000000000000000000000000000000000000000000000000000000000')
+1021102219365466010738322L
+```
+
+Now we're sure.
+
+Reading the documentation of pwntools, we find that `crc_82_darc` computes a [CRC](https://en.wikipedia.org/wiki/Cyclic_redundancy_check) of `data` with some constants.
+Our goal is to find a value of `data` such that the CRC of `data` matches its base-2, numeric interpretation.
+Reading the Wikipedia article on CRC, we learn the following:
+
+1. CRC treats the input as bits, so we need to find the binary representations of ASCII `1` and `0`.
+
+```python
+>>> bin(ord('0'))
+'0b110000'
+>>> bin(ord('1'))
+'0b110001'
+```
+
+2. CRC is linear, which means that `crc(xor(x, y)) = xor(crc(x), crc(y))`.
