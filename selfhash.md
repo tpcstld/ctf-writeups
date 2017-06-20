@@ -153,39 +153,38 @@ def binary(n):
     return answer[::-1]
 
 def main():
-    b = crc_82_darc('0' * 82)
+    # Construct b
+    b = binary(crc_82_darc('0' * 82))
 
-    # Construct A (crcs)
-    crcs = []
+    # Construct A
+    A = []
     for x in xrange(82):
         string = '\x00' * (x) + '\x01' + '\x00' * (82 - x - 1)
         crcs.append(crc_82_darc(string))
 
-    crcs = [binary(n) for n in crcs]
-    crcs = zip(*crcs)
-    crcs = [list(x) for x in crcs]
+    A = [binary(n) for n in crcs]
+    A = zip(*crcs)
+    A = [list(x) for x in crcs]
 
     # (I - A)
     for x in xrange(82):
-        crcs[x][x] = crcs[x][x] ^ 1
+        A[x][x] = A[x][x] ^ 1
     
     # Solve
     GF2 = sage.all.GF(2)
-    A = sage.all.matrix(GF2, crcs)
-    b = sage.all.vector(GF2, binary(b))
+    A = sage.all.matrix(GF2, A)
+    b = sage.all.vector(GF2, b)
 
     answer = np.array(A.solve_right(b), dtype=np.uint8)
-
     print 'Answer:', answer
-    print 'crc', crc_82_darc(''.join(answer))
 
 if __name__ == '__main__':
     main()
 ```
 
-This gave us an answer of `1010010010111000110111101011101001101011011000010000100001011100101001001100000000`.
-
 ```
+$ sage -python crc.py
+Answer: 1010010010111000110111101011101001101011011000010000100001011100101001001100000000
 $ nc selfhash.ctfcompetition.com 1337
 Give me some data: 1010010010111000110111101011101001101011011000010000100001011100101001001100000000
 
