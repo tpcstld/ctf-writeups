@@ -88,7 +88,7 @@ Reading the Wikipedia article on CRC, we learn the following:
 '0b110001'
 ```
 
-2. CRC is linear, which means that `crc(xor(x, y)) = xor(crc(x), crc(y))`.
+2. CRC is linear, which means that `crc(x xor y) = crc(x) xor crc(y)`.
 
 (2) seems like a very interesting property! Let's try it out:
 
@@ -99,7 +99,7 @@ Reading the Wikipedia article on CRC, we learn the following:
 1946231125162404815852188L
 ```
 
-We use the fact that `xor('0', '1') = 0b00000001`, since their ASCII representations differ only in the last bit.
+We use the fact that `'0' xor '1' = 0b00000001`, since their ASCII representations differ only in the last bit.
 
 ```
 >>> chr(ord('0') ^ ord('0'))
@@ -114,19 +114,7 @@ Cool, the property seems to hold.
 
 An interesting fact about CRC is that something like `crc_82_darc("1010")` is equivalent to `crc_82_darc("\x01\x00\x01\x00") xor crc_82_darc("0000")`. This is because `"1010" == "\x01\x00\x01\x00" xor "0000"`.
 
-Furthermore, we can break `\x01\x00\x01\x00` into the combination `\x01\x00\x00\x00 xor \x00\x00\x01\x00`. Since CRC is linear, then
-`crc_82_darc('\x01\x00\x01\x00') = crc_82_darc('\x01\x00\x00\x00') xor crc_82_darc('\x00\x00\x01\x00')`.
-
-Generalizing, this means that if we have the CRC of all 82-byte strings that have 1 `\x01` and 81 `\x00`s, then we can create the CRC of any 82-byte string (made from only `\x00` and `\x01`) by XORing the relevant basic CRCs together. Let's collect our set of basic CRCs.
-
-```python
-crcs = []
-for x in xrange(82):
-    string = '\x00' * x + '\x01' + '\x00' * (82 - x - 1)
-    crcs.append(crc_82_darc(string))
-```
-
-Recall that we're trying to find `data` such that `crc_82_darc(data) = int(data, 2)`. `data` is an ASCII string, but we can instead interpret the problem as finding a `\x00`-`\x01` string `x` such that `crc_82_darc(x) xor crc_82_data('0' * 82) = to_num(x)`. `to_num`  means that you interpret the string as a binary number, where `\x00 == 0` and `x01 == 1`.
+Recall that we're trying to find `data` such that `crc_82_darc(data) = int(data, 2)`. `data` is an ASCII string, but we can instead interpret the problem as finding a `\x00`-`\x01` string `x` such that `crc_82_darc(x) xor crc_82_data('0' * 82) = to_num(x)`. `to_num`  means that you interpret the string as a binary number, where `'\x00' == 0` and `'x01' == 1`.
 
 To find the `x` that satisfies the condition, we need linear algebra!
 
@@ -189,6 +177,15 @@ def main():
 
 if __name__ == '__main__':
     main()
+```
+
+This gave us an answer of `1010010010111000110111101011101001101011011000010000100001011100101001001100000000`.
+
+```
+$ nc selfhash.ctfcompetition.com 1337
+Give me some data: 1010010010111000110111101011101001101011011000010000100001011100101001001100000000
+
+CTF{i-hope-you-like-linear-algebra}
 ```
 
 <!--
