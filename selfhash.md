@@ -6,9 +6,9 @@
 
 > Challenge running at selfhash.ctfcompetition.com:1337
 
-In this challenge, we are given the following domain and port.
-
 ## Overview
+
+In this challenge, we are given the following domain and port.
 
 ```
 selfhash.ctfcompetition.com:1337
