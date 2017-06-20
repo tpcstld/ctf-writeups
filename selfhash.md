@@ -4,7 +4,7 @@ In this challenge, we are given the following domain and port.
 selfhash.ctfcompetition.com:1337
 ```
 
-As is the norm in this CTF competition, let's try connecting to it via TCP.
+As is the norm in this competition, let's try connecting to it via TCP.
 
 ```
 $ nc selfhash.ctfcompetition.com 1337
@@ -56,7 +56,7 @@ Was:
 Interesting!
 
 Some Googling reveals that the `crc_82_darc` function most likely corresponds
-to the corresponding function in [pwntools](http://docs.pwntools.com/en/stable/util/crc.html).
+to a function in [pwntools](http://docs.pwntools.com/en/stable/util/crc.html#pwnlib.util.crc.crc_82_darc).
 Let's verify that:
 
 ```
