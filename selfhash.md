@@ -90,7 +90,7 @@ Reading the Wikipedia article on CRC, we learn the following:
 
 2. CRC is linear, which means that `crc(x xor y) = crc(x) xor crc(y)`.
 
-(2) seems like a very interesting property! Let's try it out:
+Linearity seems like a very interesting property! Let's try it out:
 
 ```
 >>> crc_82_darc('0' * 81 + '1')
@@ -110,19 +110,23 @@ We use the fact that `'0' xor '1' = 0b00000001`, since their ASCII representatio
 1946231125162404815852188L
 ```
 
-Cool, the property seems to hold.
+Cool, Wikipedia isn't lying.
 
-An interesting fact about CRC is that something like `crc_82_darc("1010")` is equivalent to `crc_82_darc("\x01\x00\x01\x00") xor crc_82_darc("0000")`. This is because `"1010" == "\x01\x00\x01\x00" xor "0000"`.
+Since CRC is linear, something like `crc_82_darc("1010")` is equivalent to `crc_82_darc("\x01\x00\x01\x00") xor crc_82_darc("0000")`. This is because `"1010" == "\x01\x00\x01\x00" xor "0000"`.
 
-Recall that we're trying to find `data` such that `crc_82_darc(data) = int(data, 2)`. `data` is an ASCII string, but we can instead interpret the problem as finding a `\x00`-`\x01` string `x` such that `crc_82_darc(x) xor crc_82_data('0' * 82) = to_num(x)`. `to_num`  means that you interpret the string as a binary number, where `'\x00' == 0` and `'x01' == 1`.
+We're trying to find `data` such that `crc_82_darc(data) = int(data, 2)`. `data` is an ASCII string, but now we can interpret the problem as finding a `\x00`-`\x01` string `x` such that `crc_82_darc(x) xor crc_82_data('0' * 82) = to_num(x)`. `to_num` means that you interpret the string as a binary number, where `'\x00' == 0` and `'x01' == 1`.
 
 To find the `x` that satisfies the condition, we need linear algebra!
 
-In this enviroment, we're going to work in the space of "integers modulus 2". This makes every easy as we can now represent XOR as addition. We represet `x` as 82-element vector. The i-th element in `x` is 1 if the i-th character is `\x01`, and 0 otherwise. We also define `to_num(x) = x`. `crc_82_data('0' * 82)` returns a 82-bit constant, so let's also model it as a 82-element vector named `b`. Specifically, the i-th element `b` is 1 if and only if the i-th bit in `crc_82_data('0' * 82)` is also 1. Lastly, we need to somehow model `crc_82_data(x)`.
+In this enviroment, we're going to work in [GF(2)](https://en.wikipedia.org/wiki/GF(2)) so that we can represent XOR as addition. We represent `x` as 82-element vector, where the i-th element in `x` is 1 if the i-th character is `\x01`, and 0 otherwise. Also, we define
+`to_num(x) = x` since we no longer need to "interpret" the string.
 
-Recall that we can write the CRC of any `\x00`-`\x01` string as a linear combination (i.e. XORs) of the CRCs of the basic strings (i.e.  strings with only 1 `\x01`). Therefore, we can construct a matrix 82x82 matrix `A` such that the i-th column is populated with the CRC of the `\x00`-`\x01` basic string that whose `\x01` character is in the i-th position. We can see that `A * x = crc_82_data(x)`.
+`crc_82_data('0' * 82)` returns a 82-bit constant, so let's also model it as a 82-element vector named `b`. Specifically, the i-th element `b` is 1 if and only if the i-th bit in `crc_82_data('0' * 82)` is also 1.
 
-Now, we have the following linear equation: `Ax + b = x`. We can rewrite this as:
+Lastly, we need to transform `crc_82_data(x)`. Recall that we can write the CRC of any `\x00`-`\x01` string as a linear combination (i.e. XORs) of the CRCs of the basic strings (i.e.  strings with only 1 `\x01`). Therefore, we can construct a matrix 82x82 matrix `A` such that the i-th column is populated with the CRC of the `\x00`-`\x01` basic string that whose `\x01` character is in the i-th position. We can see that `A * x = crc_82_data(x)`.
+
+Now, we have turned the expression `crc_82_darc(x) xor crc_82_data('0' * 82) = to_num(x)` into the linear equation `Ax + b = x`.
+We can rewrite this as:
 
 ```
 b = x - Ax
@@ -130,7 +134,7 @@ b = Ix - Ax
 b = (I - A)x
 ```
 
-We can solve this using a linear algebra solver, and we decided to use [sage](http://doc.sagemath.org/html/en/tutorial/tour_algebra.html). Below is the code for our solution:
+This version is a form that we can solve using a linear algebra solver. We decided to use [sage](http://doc.sagemath.org/html/en/tutorial/tour_algebra.html) since it supports GF(2). Below is the code for our solution:
 
 ``` python
 import numpy as np
