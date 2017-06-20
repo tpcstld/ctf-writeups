@@ -114,14 +114,14 @@ Cool, Wikipedia isn't lying.
 
 Since CRC is linear, something like `crc_82_darc("1010")` is equivalent to `crc_82_darc("\x01\x00\x01\x00") xor crc_82_darc("0000")`. This is because `"1010" == "\x01\x00\x01\x00" xor "0000"`.
 
-We're trying to find `data` such that `crc_82_darc(data) = int(data, 2)`. `data` is an ASCII string, but now we can interpret the problem as finding a `\x00`-`\x01` string `x` such that `crc_82_darc(x) xor crc_82_data('0' * 82) = to_num(x)`. `to_num` means that you interpret the string as a binary number, where `'\x00' == 0` and `'x01' == 1`.
+We're trying to find `data` such that `crc_82_darc(data) = int(data, 2)`. `data` is an ASCII string, but now we can interpret the problem as finding a `\x00`-`\x01` string `x` such that `crc_82_darc(x) xor crc_82_darc('0' * 82) = to_num(x)`. `to_num` means that you interpret the string as a binary number, where `'\x00' == 0` and `'x01' == 1`.
 
-To find the `x` that satisfies the condition, we need linear algebra!
+To find the `x` that satisfies the condition, we turn to linear algebra!
 
 In this enviroment, we're going to work in [GF(2)](https://en.wikipedia.org/wiki/GF(2)) so that we can represent XOR as addition. We represent `x` as 82-element vector, where the i-th element in `x` is 1 if the i-th character is `\x01`, and 0 otherwise. Also, we define
 `to_num(x) = x` since we no longer need to "interpret" the string.
 
-`crc_82_data('0' * 82)` returns a 82-bit constant, so let's also model it as a 82-element vector named `b`. Specifically, the i-th element `b` is 1 if and only if the i-th bit in `crc_82_data('0' * 82)` is also 1.
+`crc_82_data('0' * 82)` returns a 82-bit constant, so let's also model it as a 82-element vector named `b`. Specifically, the i-th element of `b` is 1 if and only if the i-th bit in `crc_82_data('0' * 82)` is also 1.
 
 Lastly, we need to transform `crc_82_data(x)`. Recall that we can write the CRC of any `\x00`-`\x01` string as a linear combination (i.e. XORs) of the CRCs of the basic strings (i.e.  strings with only 1 `\x01`). Therefore, we can construct a matrix 82x82 matrix `A` such that the i-th column is populated with the CRC of the `\x00`-`\x01` basic string that whose `\x01` character is in the i-th position. We can see that `A * x = crc_82_data(x)`.
 
@@ -134,7 +134,7 @@ b = Ix - Ax
 b = (I - A)x
 ```
 
-This version is a form that we can solve using a linear algebra solver. We decided to use [sage](http://doc.sagemath.org/html/en/tutorial/tour_algebra.html) since it supports GF(2). Below is the code for our solution:
+We can solve this equation using a linear algebra solver, and we decided to use [sage](http://doc.sagemath.org/html/en/tutorial/tour_algebra.html) since it supports GF(2). Below is the code for our solution:
 
 ``` python
 import numpy as np
