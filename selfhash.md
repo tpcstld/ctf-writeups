@@ -1,4 +1,14 @@
+# Introspective CRC
+
+## Problem
+
+> We saw https://shells.aachen.ccc.de/~spq/md5.gif and were inspired.
+
+> Challenge running at selfhash.ctfcompetition.com:1337
+
 In this challenge, we are given the following domain and port.
+
+## Overview
 
 ```
 selfhash.ctfcompetition.com:1337
@@ -55,7 +65,7 @@ Was:
 
 Interesting!
 
-Some Googling reveals that the `crc_82_darc` function most likely corresponds
+Some Googling reveals that `crc_82_darc` most likely corresponds
 to a function in [pwntools](http://docs.pwntools.com/en/stable/util/crc.html#pwnlib.util.crc.crc_82_darc).
 Let's verify that:
 
@@ -75,7 +85,7 @@ Type "help", "copyright", "credits" or "license" for more information.
 
 Now we're sure.
 
-Reading the documentation of pwntools, we find that `crc_82_darc` computes a [CRC](https://en.wikipedia.org/wiki/Cyclic_redundancy_check) of `data` with some constants.
+Reading the documentation of pwntools, we find that `crc_82_darc` computes a [CRC](https://en.wikipedia.org/wiki/Cyclic_redundancy_check) from `data` with some constants.
 Our goal is to find a value of `data` such that the CRC of `data` matches its base-2, numeric interpretation.
 Reading the Wikipedia article on CRC, we learn the following:
 
@@ -118,7 +128,9 @@ We're trying to find `data` such that `crc_82_darc(data) = int(data, 2)`. `data`
 
 To find the `x` that satisfies the condition, we turn to linear algebra!
 
-In this enviroment, we're going to work in [GF(2)](https://en.wikipedia.org/wiki/GF(2)) so that we can represent XOR as addition. We represent `x` as 82-element vector, where the i-th element in `x` is 1 if the i-th character is `\x01`, and 0 otherwise. Also, we define
+## Solution
+
+In this environment, we're going to work in [GF(2)](https://en.wikipedia.org/wiki/GF(2)) so that we can represent XOR as addition. We represent `x` as 82-element vector, where the i-th element in `x` is 1 if the i-th character is `\x01`, and 0 otherwise. Also, we define
 `to_num(x) = x` since we no longer need to "interpret" the string.
 
 `crc_82_darc('0' * 82)` returns a 82-bit constant, so let's also model it as a 82-element vector named `b`. Specifically, the i-th element of `b` is 1 if and only if the i-th bit in `crc_82_darc('0' * 82)` is also 1.
