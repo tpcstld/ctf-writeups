@@ -121,17 +121,17 @@ To find the `x` that satisfies the condition, we turn to linear algebra!
 In this enviroment, we're going to work in [GF(2)](https://en.wikipedia.org/wiki/GF(2)) so that we can represent XOR as addition. We represent `x` as 82-element vector, where the i-th element in `x` is 1 if the i-th character is `\x01`, and 0 otherwise. Also, we define
 `to_num(x) = x` since we no longer need to "interpret" the string.
 
-`crc_82_data('0' * 82)` returns a 82-bit constant, so let's also model it as a 82-element vector named `b`. Specifically, the i-th element of `b` is 1 if and only if the i-th bit in `crc_82_data('0' * 82)` is also 1.
+`crc_82_darc('0' * 82)` returns a 82-bit constant, so let's also model it as a 82-element vector named `b`. Specifically, the i-th element of `b` is 1 if and only if the i-th bit in `crc_82_darc('0' * 82)` is also 1.
 
-Lastly, we need to transform `crc_82_data(x)`. Recall that we can write the CRC of any `\x00`-`\x01` string as a linear combination (i.e. XORs) of the CRCs of the basic strings (i.e.  strings with only 1 `\x01`). Therefore, we can construct a matrix 82x82 matrix `A` such that the i-th column is populated with the CRC of the `\x00`-`\x01` basic string that whose `\x01` character is in the i-th position. We can see that `A * x = crc_82_data(x)`.
+Lastly, we need to transform `crc_82_darc(x)`. Recall that we can write the CRC of any `\x00`-`\x01` string as a linear combination (i.e. XORs) of the CRCs of the basic strings (i.e.  strings with only 1 `\x01`). Therefore, we can construct a matrix 82x82 matrix `A` such that the i-th column is populated with the CRC of the `\x00`-`\x01` basic string that whose `\x01` character is in the i-th position. We can see that `A * x = crc_82_darc(x)`.
 
-Now, we have turned the expression `crc_82_darc(x) xor crc_82_data('0' * 82) = to_num(x)` into the linear equation `Ax + b = x`.
+Now, we have turned the expression `crc_82_darc(x) xor crc_82_darc('0' * 82) = to_num(x)` into the linear equation `A * x + b = x`.
 We can rewrite this as:
 
 ```
-b = x - Ax
-b = Ix - Ax
-b = (I - A)x
+b = x - A * x
+b = I * x - A * x
+b = (I - A) * x
 ```
 
 We can solve this equation using a linear algebra solver, and we decided to use [sage](http://doc.sagemath.org/html/en/tutorial/tour_algebra.html) since it supports GF(2). Below is the code for our solution:
@@ -142,15 +142,8 @@ import sage.all
 
 from pwnlib.util.crc import crc_82_darc
 
-def binary_recursive(n):
-    return n>0 and [n&1]+binary_recursive(n>>1) or []
-
 def binary(n):
-    answer = binary_recursive(n)
-    while len(answer) < 82:
-        answer.append(0)
-
-    return answer[::-1]
+    return map(int, '{0:082b}'.format(x))
 
 def main():
     # Construct b
@@ -160,7 +153,7 @@ def main():
     A = []
     for x in xrange(82):
         string = '\x00' * (x) + '\x01' + '\x00' * (82 - x - 1)
-        crcs.append(crc_82_darc(string))
+        A.append(crc_82_darc(string))
 
     A = [binary(n) for n in crcs]
     A = zip(*crcs)
