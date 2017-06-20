@@ -1,4 +1,4 @@
-To start this challenge, we are given the following domain and port.
+In this challenge, we are given the following domain and port.
 
 ```
 selfhash.ctfcompetition.com:1337
@@ -112,6 +112,94 @@ We use the fact that `xor('0', '1') = 0b00000001`, since their ASCII representat
 
 Cool, the property seems to hold.
 
+An interesting fact about CRC is that something like `crc_82_darc("1010")` is equivalent to `crc_82_darc("\x01\x00\x01\x00") xor crc_82_darc("0000")`. This is because `"1010" == "\x01\x00\x01\x00" xor "0000"`.
+
+Furthermore, we can break `\x01\x00\x01\x00` into the combination `\x01\x00\x00\x00 xor \x00\x00\x01\x00`. Since CRC is linear, then
+`crc_82_darc('\x01\x00\x01\x00') = crc_82_darc('\x01\x00\x00\x00') xor crc_82_darc('\x00\x00\x01\x00')`.
+
+Generalizing, this means that if we have the CRC of all 82-byte strings that have 1 `\x01` and 81 `\x00`s, then we can create the CRC of any 82-byte string (made from only `\x00` and `\x01`) by XORing the relevant basic CRCs together. Let's collect our set of basic CRCs.
+
+```python
+crcs = []
+for x in xrange(82):
+    string = '\x00' * x + '\x01' + '\x00' * (82 - x - 1)
+    crcs.append(crc_82_darc(string))
+```
+
+Recall that we're trying to find `data` such that `crc_82_darc(data) = int(data, 2)`. `data` is an ASCII string, but we can instead interpret the problem as finding a `\x00`-`\x01` string `x` such that `crc_82_darc(x) xor crc_82_data('0' * 82) = to_num(x)`. `to_num`  means that you interpret the string as a binary number, where `\x00 == 0` and `x01 == 1`.
+
+To find the `x` that satisfies the condition, we need linear algebra!
+
+In this enviroment, we're going to work in the space of "integers modulus 2". This makes every easy as we can now represent XOR as addition. We represet `x` as 82-element vector. The i-th element in `x` is 1 if the i-th character is `\x01`, and 0 otherwise. We also define `to_num(x) = x`. `crc_82_data('0' * 82)` returns a 82-bit constant, so let's also model it as a 82-element vector named `b`. Specifically, the i-th element `b` is 1 if and only if the i-th bit in `crc_82_data('0' * 82)` is also 1. Lastly, we need to somehow model `crc_82_data(x)`.
+
+Recall that we can write the CRC of any `\x00`-`\x01` string as a linear combination (i.e. XORs) of the CRCs of the basic strings (i.e.  strings with only 1 `\x01`). Therefore, we can construct a matrix 82x82 matrix `A` such that the i-th column is populated with the CRC of the `\x00`-`\x01` basic string that whose `\x01` character is in the i-th position. We can see that `A * x = crc_82_data(x)`.
+
+Now, we have the following linear equation: `Ax + b = x`. We can rewrite this as:
+
+```
+b = x - Ax
+b = Ix - Ax
+b = (I - A)x
+```
+
+We can solve this using a linear algebra solver, and we decided to use [sage](http://doc.sagemath.org/html/en/tutorial/tour_algebra.html). Below is the code for our solution:
+
+``` python
+import numpy as np
+import sage.all
+
+from pwnlib.util.crc import crc_82_darc
+
+def binary_recursive(n):
+    return n>0 and [n&1]+binary_recursive(n>>1) or []
+
+def binary(n):
+    answer = binary_recursive(n)
+    while len(answer) < 82:
+        answer.append(0)
+
+    return answer[::-1]
+
+def main():
+    b = crc_82_darc('0' * 82)
+
+    # Construct A (crcs)
+    crcs = []
+    for x in xrange(82):
+        string = '\x00' * (x) + '\x01' + '\x00' * (82 - x - 1)
+        crcs.append(crc_82_darc(string))
+
+    crcs = [binary(n) for n in crcs]
+    crcs = zip(*crcs)
+    crcs = [list(x) for x in crcs]
+
+    # (I - A)
+    for x in xrange(82):
+        crcs[x][x] = crcs[x][x] ^ 1
+    
+    # Solve
+    GF2 = sage.all.GF(2)
+    A = sage.all.matrix(GF2, crcs)
+    b = sage.all.vector(GF2, binary(b))
+
+    answer = np.array(A.solve_right(b), dtype=np.uint8)
+
+    print 'Answer:', answer
+    print 'crc', crc_82_darc(''.join(answer))
+
+if __name__ == '__main__':
+    main()
+```
+
+<!--
+
+For example, `crc_82_darc('\x01\x00\x01\x01') == 1*crc_82_darc('\x01\x00\x00\x00') + 0*crc_82_darc('x00\x01\x00\x00') + 1*crc_82_darc('\x00\x00\x01\x00') + 0*crc_82_darc('\x00\x00\x00\x01')`. (Remember that addition is the same as XOR now.)
+
+Let's instead find a `\x00`-`\x01` string such that
+`crc_82_darc(x) xor crc_82_darc("0" * 82) == to_num(x)`
+
+The challenge asks us to find `data` such that `crc_82_darc(data) = int(data, 2)`. Instead of finding this directly, we'll instead find a string `x` of `\x00` and `\x01` such that `crc_82_darc(x) xor crc_82_darc("0" * 82) == x`
+
 Observe that any binary number can be written as the `xor` of its bits. For example, `1010` can be written as `xor(1000, 0010)`. We can also `xor` it with `0000` as well. `1010 = xor(1000, 0010, 0000)`.
 
 ASCII strings of zeros and ones also have a similar property. For example, the string
@@ -124,8 +212,6 @@ Here's the relationship between the binary and ASCII representations of a number
 `"0000"`|0b0011000<span style="color:red">0</span> 0b0011000<span style="color:red">0</span> 0b0011000<span style="color:red">0</span> 0b0011000<span style="color:red">0</span>| 0b<span style="color:red">0</span><span style="color:red">0</span><span style="color:red">0</span><span style="color:red">0</span>
 `"1010"`|0b00110001 0b00110000 0b00110001 0b00110000| 0b1010
 `"0001"`|0b00110000 0b00110000 0b00110000 0b00110001| 0b0000
-
-<!-- Matrix Construction -->
 
 Now, given a CRC, we can use its linearity property to break it up into a combination of XORs just like how we can break up
 ASCII strings. For example,
@@ -147,4 +233,4 @@ To do this, we need to mathematically represent:
 
 we need to find a set `(0000, 1000, 0010)` such that `xor(crc_82_darc("0000"), ...) = xor(0b0000, ...)`
 
-we need both sets of XORs to represent the same number. This will get us a string So, we can consider this problem as a system of equations
+we need both sets of XORs to represent the same number. This will get us a string So, we can consider this problem as a system of equations -->
