@@ -146,7 +146,7 @@ from pwnlib.util.crc import crc_82_darc
 def binary(x):
     """
     Convert a number to its binary representation as a list of 82 0's and 1's.
-    >>> binary(0b10110)[:-5]
+    >>> binary(0b10110)[-5:]
     [1, 0, 1, 1, 0]
     >>> len(binary(1021102219365466010738322L))
     82
