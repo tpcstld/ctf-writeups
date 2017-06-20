@@ -137,13 +137,29 @@ b = (I - A) * x
 We can solve this equation using a linear algebra solver, and we decided to use [sage](http://doc.sagemath.org/html/en/tutorial/tour_algebra.html) since it supports GF(2). Below is the code for our solution:
 
 ``` python
+#!/usr/bin/sage -python
 import numpy as np
 import sage.all
 
 from pwnlib.util.crc import crc_82_darc
 
-def binary(n):
+def binary(x):
+    """
+    Convert a number to its binary representation as a list of 82 0's and 1's.
+    >>> binary(0b10110)[-5:]
+    [1, 0, 1, 1, 0]
+    >>> len(binary(1021102219365466010738322L))
+    82
+    """
     return map(int, '{0:082b}'.format(x))
+
+def transpose(A):
+    """
+    Return the transpose of a rectangular matrix.
+    >>> transpose([[1, 2, 3], [4, 5, 6]])
+    [[1, 4], [2, 5], [3, 6]]
+    """
+    return map(list, zip(*A))
 
 def main():
     # Construct b
@@ -151,25 +167,24 @@ def main():
 
     # Construct A
     A = []
-    for x in xrange(82):
-        string = '\x00' * (x) + '\x01' + '\x00' * (82 - x - 1)
-        A.append(crc_82_darc(string))
+    for i in xrange(82):
+        string_with_1_at_i = '\x00' * i + '\x01' + '\x00' * (82 - i - 1)
+        A.append(binary(crc_82_darc(string_with_1_at_i)))
 
-    A = [binary(n) for n in crcs]
-    A = zip(*crcs)
-    A = [list(x) for x in crcs]
+    # Transpose A
+    A = transpose(A)
 
-    # (I - A)
-    for x in xrange(82):
-        A[x][x] = A[x][x] ^ 1
+    # Compute (I - A) (subtraction is XOR  in GF2)
+    for i in xrange(82):
+        A[i][i] = A[i][i] ^ 1
     
-    # Solve
+    # Solve for x where Ax = b
     GF2 = sage.all.GF(2)
     A = sage.all.matrix(GF2, A)
     b = sage.all.vector(GF2, b)
 
-    answer = np.array(A.solve_right(b), dtype=np.uint8)
-    print 'Answer:', answer
+    answer = A.solve_right(b)
+    print 'Answer:', ''.join(map(str, answer))
 
 if __name__ == '__main__':
     main()
