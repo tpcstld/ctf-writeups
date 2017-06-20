@@ -98,7 +98,7 @@ Reading the Wikipedia article on CRC, we learn the following:
 '0b110001'
 ```
 
-2. CRC is linear, which means that `crc(x xor y) = crc(x) xor crc(y)`.
+2. CRC is linear, or formally `crc(x xor y) = crc(x) xor crc(y)`.
 
 Linearity seems like a very interesting property! Let's try it out:
 
