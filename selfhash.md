@@ -209,48 +209,4 @@ $ nc selfhash.ctfcompetition.com 1337
 Give me some data: 1010010010111000110111101011101001101011011000010000100001011100101001001100000000
 
 CTF{i-hope-you-like-linear-algebra}
-```
-
-<!--
-
-For example, `crc_82_darc('\x01\x00\x01\x01') == 1*crc_82_darc('\x01\x00\x00\x00') + 0*crc_82_darc('x00\x01\x00\x00') + 1*crc_82_darc('\x00\x00\x01\x00') + 0*crc_82_darc('\x00\x00\x00\x01')`. (Remember that addition is the same as XOR now.)
-
-Let's instead find a `\x00`-`\x01` string such that
-`crc_82_darc(x) xor crc_82_darc("0" * 82) == to_num(x)`
-
-The challenge asks us to find `data` such that `crc_82_darc(data) = int(data, 2)`. Instead of finding this directly, we'll instead find a string `x` of `\x00` and `\x01` such that `crc_82_darc(x) xor crc_82_darc("0" * 82) == x`
-
-Observe that any binary number can be written as the `xor` of its bits. For example, `1010` can be written as `xor(1000, 0010)`. We can also `xor` it with `0000` as well. `1010 = xor(1000, 0010, 0000)`.
-
-ASCII strings of zeros and ones also have a similar property. For example, the string
-`"1010" == xor("0000", "\x01\x00\x00\x00", "\x00\x00\x01\x00")`.
-
-Here's the relationship between the binary and ASCII representations of a number.
-
-`data`  |ASCII representation                       |`int(data, 2)`  
---------|-------------------------------------------|--------------
-`"0000"`|0b0011000<span style="color:red">0</span> 0b0011000<span style="color:red">0</span> 0b0011000<span style="color:red">0</span> 0b0011000<span style="color:red">0</span>| 0b<span style="color:red">0</span><span style="color:red">0</span><span style="color:red">0</span><span style="color:red">0</span>
-`"1010"`|0b00110001 0b00110000 0b00110001 0b00110000| 0b1010
-`"0001"`|0b00110000 0b00110000 0b00110000 0b00110001| 0b0000
-
-Now, given a CRC, we can use its linearity property to break it up into a combination of XORs just like how we can break up
-ASCII strings. For example,
-`crc_82_darc("1010") == xor(crc_82_darc("0000"), crc_82_darc("\x01\x00\x00\x00"), crc_82_darc("\x00\x00\x01\x00")`.
-Similarly, recall that `0b1010 == xor(0b0000, 0b1000, 0b0010)`.
-
-To solve this problem, we need the CRC of the ASCII representation to be the CRC. We will model this as a system of equations and solve for the CRC.
-
-To do this, we need to mathematically represent:
-
-* a binary number
-* the XOR of binary numbers
-* the `crc_82_darc` of a binary number
-* the equality of two binary numbers
-
-
-
-
-
-we need to find a set `(0000, 1000, 0010)` such that `xor(crc_82_darc("0000"), ...) = xor(0b0000, ...)`
-
-we need both sets of XORs to represent the same number. This will get us a string So, we can consider this problem as a system of equations -->
+``
